@@ -1,0 +1,46 @@
+{
+    "dogs": [
+        {
+            "name": "Alice",
+            "breed": "Australian Shepherd",
+            "age": 5,
+            "sex": "Female"
+        },
+        {
+            "name": "Ben",
+            "breed": "Beagle",
+            "age": 2,
+            "sex": "Male"
+        },
+        {
+            "name": "Greg",
+            "breed": "German Shepherd",
+            "age": 10,
+            "sex": "Male"
+        },
+        {
+            "name": "Jane",
+            "breed": "Jack Russell Terrier",
+            "age": 2,
+            "sex": "Female"
+        },
+        {
+            "name": "Larry",
+            "breed": "Labrador Retriever",
+            "age": 9,
+            "sex": "Male"
+        },
+        {
+            "name": "Ray",
+            "breed": "Rottweiler",
+            "age": 1,
+            "sex": "Male"
+        },
+        {
+            "name": "Tina",
+            "breed": "Tibetan Mastiff",
+            "age": 4,
+            "sex": "Female"
+        }
+    ]
+}
