@@ -1,0 +1,28 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "get"
+      ],
+      "route": "dogs/{id}"
+    },
+    {
+      "name": "tableBinding",
+      "type": "table",
+      "tableName": "dogs",
+      "partitionKey": "DOG",
+      "rowKey": "{id}",
+      "connection": "AZURE_STORAGE_CONNECTION_STRING",
+      "direction": "in"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ]
+}

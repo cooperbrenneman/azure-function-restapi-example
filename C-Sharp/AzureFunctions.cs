@@ -37,14 +37,6 @@ namespace AzureRESTAPIDogExample
 
                 await dogTable.AddAsync(dog.ToTableEntity());
 
-                log.LogInformation("Created new dog:");
-                log.LogInformation($"\tId: {dog.Id}");
-                log.LogInformation($"\tName: {dog.Name}");
-                log.LogInformation($"\tBreed: {dog.Breed}");
-                log.LogInformation($"\tAge: {dog.Age}");
-                log.LogInformation($"\tSex: {dog.Sex}");
-                log.LogInformation($"\tCreated Time: {dog.CreatedTime}");
-
                 return new OkObjectResult(dog);
             }
             catch (Exception e)
@@ -75,7 +67,7 @@ namespace AzureRESTAPIDogExample
             ILogger log,
             string id)
         {
-            log.LogInformation("Starting GetDog function...");
+            log.LogInformation("Starting GetDogById function...");
 
             if (dog == null)
             {
@@ -95,7 +87,7 @@ namespace AzureRESTAPIDogExample
         {
             log.LogInformation("Starting DeleteDog function...");
 
-            var deleteOperation = TableOperation.Delete(new TableEntity() { PartitionKey = "DOG", RowKey = id, ETag = "*"});
+            var deleteOperation = TableOperation.Delete(new TableEntity() { PartitionKey = "DOG", RowKey = id, ETag = "*" });
             try
             {
                 var deleteResult = await dogTable.ExecuteAsync(deleteOperation);
@@ -123,12 +115,12 @@ namespace AzureRESTAPIDogExample
                 var data = JsonConvert.DeserializeObject<DogCreateModel>(requestBody);
                 var findOperation = TableOperation.Retrieve<DogTableEntity>("DOG", id);
                 var findResult = await dogTable.ExecuteAsync(findOperation);
-                if(findResult.Result == null)
+                if (findResult.Result == null)
                 {
                     return new NotFoundResult();
                 }
                 var existingDogRow = (DogTableEntity)findResult.Result;
-                
+
                 existingDogRow.Age = data.Age;
 
                 if (!string.IsNullOrEmpty(data.Name))

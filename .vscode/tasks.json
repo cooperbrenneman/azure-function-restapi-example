@@ -69,13 +69,30 @@
         },
         {
             "type": "func",
-            "dependsOn": "build",
-            "options": {
-                "cwd": "${workspaceFolder}/C-Sharp/bin/BWS/Debug/netcoreapp3.0"
-            },
             "command": "host start",
+            "problemMatcher": "$func-watch",
             "isBackground": true,
-            "problemMatcher": "$func-watch"
+            "dependsOn": "npm install",
+            "options": {
+                "cwd": "${workspaceFolder}/Javascript"
+            }
+        },
+        {
+            "type": "shell",
+            "label": "npm install",
+            "command": "npm install",
+            "options": {
+                "cwd": "${workspaceFolder}/Javascript"
+            }
+        },
+        {
+            "type": "shell",
+            "label": "npm prune",
+            "command": "npm prune --production",
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}/Javascript"
+            }
         }
     ]
 }
