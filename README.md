@@ -27,7 +27,6 @@ In this tutorial, there are two languages that will be supported:
 
 In some cases, the steps used to configure these Azure Functions will differ because of the languages. In those cases, there will language specific notes to ensure that the correct steps can be followed.
 
-
 ## Creating Resources
 
 ## Creating a Resource Group
@@ -327,7 +326,6 @@ The `Connection` variable in the `Table` attribute will then use the connection 
 
 ### Configuring Function App Environment
 
-
 #### Creating the Azure Function
 
 Go to the Azure button in Visual Studio Code and locate the "Functions" section. Select "Create New Project...", select the location you want to use for your rest api.
@@ -359,7 +357,7 @@ module.exports = async function (context, req) {
     if(req.body){
 
         if(req.body.name && req.body.breed && req.body.age && req.body.sex){
-           
+
             context.bindings.tableBinding = [];
 
             var dog = {
@@ -371,7 +369,7 @@ module.exports = async function (context, req) {
                 RowKey: uuidv4(),
                 PartitionKey: "DOG"
             };
-            
+
             context.bindings.tableBinding.push(dog);
 
             context.res = {
@@ -430,9 +428,26 @@ Update the function.json to the below:
 Create the azure function below in a directory (in this example it is `GetAllDogs\index.js`):
 
 ```javascript
+module.exports = async function (context, req) {
+    context.log('JavaScript HTTP trigger function processed a request.');
+
+    var dogs = context.bindings.dogEntity;
+
+    if (dogs) {
+        context.res = {
+            body: dogs
+        };
+    }
+    else {
+        context.res = {
+            body: "Unable to find any dogs"
+        };
+    }
+};
 ```
 
 Update the function.json to the below:
+
 ```json
 {
   "bindings": [
@@ -464,13 +479,31 @@ Update the function.json to the below:
 
 ### Creating GetDog GET Method
 
-Create the azure function below in a directory (in this example it is `CreateDog\index.js`):
+Create the azure function below in a directory (in this example it is `GetDogById\index.js`):
 
 
 ```javascript
+module.exports = async function (context, req) {
+    context.log('Starting GetDogById function...');
+
+    if(context.bindings.tableBinding){
+        context.log(context.bindings.tableBinding);
+        context.res = {
+            status: 200,
+            body: context.bindings.tableBinding
+        }
+    } else {
+        context.res = {
+            status: 404,
+            body: "Unable to find specified item with id: " + req.params.id
+        }
+    }
+
+};
 ```
 
 Update the function.json to the below:
+
 ```json
 {
   "bindings": [
@@ -480,16 +513,18 @@ Update the function.json to the below:
       "direction": "in",
       "name": "req",
       "methods": [
-        "post"
+        "get"
       ],
-      "route": "dogs"
+      "route": "dogs/{id}"
     },
     {
-      "type": "table",
-      "direction": "out",
       "name": "tableBinding",
+      "type": "table",
       "tableName": "dogs",
-      "connection": "AZURE_STORAGE_CONNECTION_STRING"
+      "partitionKey": "DOG",
+      "rowKey": "{id}",
+      "connection": "AZURE_STORAGE_CONNECTION_STRING",
+      "direction": "in"
     },
     {
       "type": "http",
@@ -502,14 +537,50 @@ Update the function.json to the below:
 
 ### Creating DeleteDog DELETE Method
 
-TODO
-
-Create the below azure function below:
+Create the azure function below in a directory (in this example it is `DeleteDog\index.js`):
 
 ```javascript
+var azure = require('azure-storage');
+
+module.exports = async function (context, req) {
+    context.log('Starting DeleteDog function...');
+
+    if(req.params.id){
+
+        var tableService = azure.createTableService();
+
+        var entGen = azure.TableUtilities.entityGenerator;
+
+        var entity = {
+            PartitionKey: entGen.String("DOG"),
+            RowKey: entGen.String(req.params.id)
+        }
+
+        tableService.deleteEntity("dogs", entity, (err, result, response) => 
+        {
+            if(!err){
+                context.res = {
+                    status: 200,
+                    body: "Dog deleted with id: " + req.params.id
+                };
+            } else {
+                context.res = {
+                    status: 502,
+                    body: "Unable to delete the entry"
+                };
+            }
+        });
+    } else {
+        context.res = {
+            status: 400,
+            body: "Please pass an id in the url"
+        };
+    }
+};
 ```
 
 Update the function.json to the below:
+
 ```json
 {
   "bindings": [
@@ -519,16 +590,9 @@ Update the function.json to the below:
       "direction": "in",
       "name": "req",
       "methods": [
-        "post"
+        "delete"
       ],
-      "route": "dogs"
-    },
-    {
-      "type": "table",
-      "direction": "out",
-      "name": "tableBinding",
-      "tableName": "dogs",
-      "connection": "AZURE_STORAGE_CONNECTION_STRING"
+      "route": "dogs/{id}"
     },
     {
       "type": "http",
@@ -541,14 +605,74 @@ Update the function.json to the below:
 
 ### Creating UpdateDog PUT Method
 
-TODO
-
-Create the below azure function below:
+Create the azure function below in a directory (in this example it is `UpdateDog\index.js`):
 
 ```javascript
+var azure = require('azure-storage');
+
+module.exports = async function (context, req) {
+    context.log('Starting UpdateDog function...');
+
+    if(req.params.id){
+
+        var tableService = azure.createTableService();
+
+        tableService.retrieveEntity("dogs", "DOG", req.params.id, (err, result, response) => {
+            if(!err){
+                entity = result;
+
+                if(req.body){
+                    if(req.body.name){
+                        entity.Name = req.body.name;
+                    }
+                    if(req.body.age){
+                        entity.Age = req.body.age;
+                    }
+                    if(req.body.sex){
+                        entity.Sex = req.body.sex;
+                    }
+                    if(req.body.breed){
+                        entity.Breed = req.body.breed;
+                    }
+
+                    tableService.insertOrMergeEntity("dogs", entity, (err, result, response) => 
+                    {
+                        if(!err){
+                            context.res = {
+                                status: 200,
+                                body: "Updated the entry with id " + req.params.id
+                            };
+                        } else {
+                            context.res = {
+                                status: 502,
+                                body: "Unable to update the entry"
+                            };
+                        }
+                    });
+                } else {
+                    context.res = {
+                        status: 400,
+                        body: "Must supply at least one value to update in the body of the request"
+                    };
+                }
+            } else {
+                context.res = {
+                    status: 502,
+                    body: "Unable to update the entry"
+                };
+            }
+        });
+    } else {
+        context.res = {
+            status: 400,
+            body: "Please pass an id in the url"
+        };
+    }
+};
 ```
 
 Update the function.json to the below:
+
 ```json
 {
   "bindings": [
@@ -558,16 +682,9 @@ Update the function.json to the below:
       "direction": "in",
       "name": "req",
       "methods": [
-        "post"
+        "put"
       ],
-      "route": "dogs"
-    },
-    {
-      "type": "table",
-      "direction": "out",
-      "name": "tableBinding",
-      "tableName": "dogs",
-      "connection": "AZURE_STORAGE_CONNECTION_STRING"
+      "route": "dogs/{id}"
     },
     {
       "type": "http",
